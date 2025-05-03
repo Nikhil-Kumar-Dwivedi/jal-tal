@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - जल-तल</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle, #0f0c29, #302b63, #24243e);
+            color: #fff;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px #0ff, 0 0 30px #00f;
+        }
+
+        h2 {
+            text-align: center;
+            color: #0ff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #ccc;
+        }
+
+        label i {
+            margin-right: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #1e1e2f;
+            border: none;
+            border-radius: 10px;
+            color: #0ff;
+            font-size: 16px;
+            box-shadow: inset 0 0 5px #0ff;
+        }
+
+        input::placeholder {
+            color: #aaa;
+        }
+
+        #map {
+            height: 300px;
+            border-radius: 10px;
+            margin-top: 10px;
+            box-shadow: 0 0 10px #0ff;
+        }
+
+        button {
+            background: #0ff;
+            color: #000;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #00f;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
+    <form action="/signup" method="POST">
+        <div class="form-group">
+            <label><i class="fas fa-user"></i> Name</label>
+            <input type="text" name="name" required>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-phone"></i> Phone Number</label>
+            <input type="text" name="number" required>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-lock"></i> Password</label>
+            <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-calendar"></i> Date of Birth</label>
+            <input type="date" name="dob" required>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-map-marker-alt"></i> Select Your Location on Map</label>
+            <div id="map"></div>
+            <input type="hidden" id="latitude" name="latitude" required>
+            <input type="hidden" id="longitude" name="longitude" required>
+        </div>
+
+        <button type="submit"><i class="fas fa-check-circle"></i> Create Account</button>
+    </form>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([22.9734, 78.6569], 5.5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker;
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+
+        if (marker) {
+            map.removeLayer(marker);
+        }
+
+        marker = L.marker([lat, lng]).addTo(map)
+            .bindPopup("Selected Location")
+            .openPopup();
+    });
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const lat = document.getElementById('latitude').value;
+        const lng = document.getElementById('longitude').value;
+
+        if (!lat || !lng) {
+            alert("Please select your location on the map.");
+            e.preventDefault();
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,504 @@
+<!-- nearestwell.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>जल-तल | Nearest Well</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+   
+    
+    <style>
+        html, body { height: 100%; margin: 0; }
+        .main-container { height: calc(100vh - 56px); display: flex; }
+        .sidebar {
+            width: 300px; background-color: #b5d2ef;
+            padding: 20px; border-right: 1px solid #ddd; overflow-y: auto;
+        }
+        #map-container { flex-grow: 1; height: 100%; width: 100%; }
+        .navbar-brand { font-weight: bold; font-size: 1.5rem; border-radius: 25px; }
+        .nav-link { color: white !important; margin-right: 10px; }
+        .nav-link:hover { color: #ffeb3b !important; }
+        .login-dropdown, .profile-dropdown {
+            display: none; flex-direction: column; align-items: flex-start;
+            position: absolute; top: 56px; right: 0; background-color: white;
+            border: 1px solid #ddd; padding: 10px; z-index: 1050;
+        }
+        .login-dropdown a, .profile-dropdown a {
+            text-decoration: none; color: #007bff; padding: 5px 10px;
+        }
+        .login-dropdown a:hover, .profile-dropdown a:hover { background-color: #f1f1f1; }
+        .login-icon { cursor: pointer; }
+
+        .centered-popup {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgb(182, 249, 243);
+        border: 1px solid #ccc;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 1100;
+    }
+
+    .centered-popup a {
+        text-decoration: none;
+        color: #007bff;
+        padding: 8px 16px;
+        width: 100%;
+        text-align: center;
+    }
+
+    .centered-popup a:hover {
+        background-color: #f0f0f0;
+        border-radius: 5px;
+    }
+
+    .overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.3);
+        z-index: 1099;
+    }
+    </style>
+    
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">जल-तल</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="/aquifer">Aquifer Map</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/nearestwell">Nearest Well</a></li>
+                <li class="nav-item"><a class="nav-link" href="/farmerhelp">Farmer Help</a></li>
+            </ul>
+            <div class="nav-item ms-3">
+                {% if session.get('user_id') %}
+                    <span class="login-icon" onclick="toggleProfilePopup()">
+                        <i class="bi bi-person-circle" style="font-size: 1.5rem; color: white;"></i>
+                    </span>
+                    <div class="overlay" id="profileOverlay" onclick="closeProfilePopup()"></div>
+                    <div class="centered-popup" id="profilePopup">
+                        <button class="btn btn-primary" onclick="enableMapClickForBoringData()">Submit Boring Data</button>
+                        <a href="/logout">Logout</a>
+                    </div>
+                {% else %}
+                    <span class="login-icon" onclick="toggleLoginDropdown()">
+                        <i class="bi bi-person-circle" style="font-size: 1.5rem; color: white;"></i>
+                    </span>
+                    <div class="overlay" id="loginOverlay" onclick="closeLoginPopup()"></div>
+                    <div class="centered-popup" id="loginPopup">
+                        <a href="/login">Login</a>
+                        <a href="/signup">Sign Up</a>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="main-container">
+    <div class="sidebar">
+        <h4>Filter by Location</h4>
+        <label for="stateSelect">State:</label>
+        <select id="stateSelect" class="form-select">
+            <option value="">Select State</option>
+            {% for state in states %}<option value="{{ state }}">{{ state }}</option>{% endfor %}
+        </select>
+        <label for="districtSelect" class="form-label mt-3">District:</label>
+        <select id="districtSelect" class="form-select" disabled>
+            <option value="">Select District</option>
+        </select>
+        <!-- <button class="btn btn-primary w-100 mt-3" id="loadWellsBtn" disabled>Show Wells</button> -->
+    </div>
+    <div id="map-container"></div>
+</div>
+
+<!-- Modal for well info -->
+<div class="modal fade" id="wellModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Well Information</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="wellInfoContent"></div>
+    </div></div>
+</div>
+
+<!-- Modal for boring data
+<div class="modal fade" id="boringModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form action="/submit_boring_data" method="POST">
+            <div class="modal-header"><h5 class="modal-title">Submit Boring Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" name="depth" class="form-control mb-2" placeholder="Enter Depth (in meters)" required>
+                <textarea name="feedback" class="form-control mb-2" placeholder="Enter Feedback" required></textarea>
+                <input type="hidden" name="lat" id="boringLat">
+                <input type="hidden" name="lon" id="boringLon">
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Submit</button>
+            </div>
+        </form>
+    </div></div>
+</div> -->
+
+<!-- Boring Data Form Popup -->
+<div class="overlay" id="boringOverlay" onclick="closeBoringPopup()"></div>
+<div class="centered-popup" id="boringFormPopup" style="width: 400px;">
+    <h5>Submit Boring Data</h5>
+    <form id="boringForm">
+        <input type="hidden" id="stateInput" name="state">
+        <input type="hidden" id="districtInput" name="district">
+        <input type="hidden" id="latInput" name="latitude">
+        <input type="hidden" id="lonInput" name="longitude">
+
+        <div class="mb-2">
+            <label for="depthInput">Depth of Bore (m)</label>
+            <input type="number" class="form-control" id="depthInput" name="depth" required>
+        </div>
+        <div class="mb-2">
+            <label for="boringYearInput">Boring Year</label>
+            <input type="number" class="form-control" id="boringYearInput" name="boring_year" required>
+        </div>
+        <div class="mb-2">
+            <label for="submissionYearInput">Submission Year</label>
+            <input type="number" class="form-control" id="submissionYearInput" name="submission_year" required>
+        </div>
+        <div class="mb-2">
+            <label for="feedbackInput">Feedback</label>
+            <textarea class="form-control" id="feedbackInput" name="feedback" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success w-100 mt-2">Submit</button>
+    </form>
+</div>
+
+
+<div id="coordinateDisplay" style="
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fffcfc;
+    padding: 6px 12px;
+    font-size: 17px;
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(255, 254, 254, 0.3);
+    z-index: 1000;">
+    Lat: --, Lon: --
+</div>
+
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var map = L.map('map-container').setView([22.9734, 78.6569], 5.5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var wells = [];  // To hold the well markers and associated data
+
+    function showWellInfo(lat, lon) {
+        // Fetch predicted water level
+        fetch('/predict_water_level', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: lat, longitude: lon, year: 2026 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const predictedWaterLevel = data.predicted_water_level;
+            // Show well info and prediction in the modal
+            document.getElementById("wellInfoContent").innerHTML = 
+                `<b>Water Level Prediction for 2026:</b> ${predictedWaterLevel} mbgl<br>
+                <b>Latitude:</b> ${lat}<br>
+                <b>Longitude:</b> ${lon}<br>`;
+            // Show modal
+            var myModal = new bootstrap.Modal(document.getElementById('wellModal'));
+            myModal.show();
+        });
+    }
+
+    function addWellMarkers(wellData) {
+        wellData.forEach(function(well) {
+            var marker = L.marker([well.lat, well.lon])
+                .addTo(map)
+                .bindPopup(well.popup)
+                .on('click', function() {
+                    showWellInfo(well.lat, well.lon);  // Show prediction for the clicked well
+                });
+            wells.push(marker);  // Store the marker for future use
+        });
+        
+
+
+        
+    }
+    
+    
+
+    // Function to fetch and show wells based on selected state and district
+    function loadWells(state, district) {
+        fetch('/get_wells', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state: state, district: district })
+        })
+        .then(response => response.json())
+        .then(data => {
+            addWellMarkers(data);
+        });
+    }
+
+    // Handle state and district filtering
+    document.getElementById('stateSelect').addEventListener('change', function() {
+        var state = this.value;
+        fetch('/get_districts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state: state })
+        })
+        .then(response => response.json())
+        .then(districts => {
+            var districtSelect = document.getElementById('districtSelect');
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+            districts.forEach(function(district) {
+                var option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+            districtSelect.disabled = false;
+        });
+    });
+
+    document.getElementById('districtSelect').addEventListener('change', function() {
+        var state = document.getElementById('stateSelect').value;
+        var district = this.value;
+        loadWells(state, district);  // Load wells based on the selected state and district
+    });
+
+    // Login and profile popup toggles
+    function toggleLoginDropdown() {
+        const popup = document.getElementById('loginPopup');
+        const overlay = document.getElementById('loginOverlay');
+        const isVisible = popup.style.display === 'flex';
+        popup.style.display = isVisible ? 'none' : 'flex';
+        overlay.style.display = isVisible ? 'none' : 'block';
+    }
+
+    function closeLoginPopup() {
+        document.getElementById('loginPopup').style.display = 'none';
+        document.getElementById('loginOverlay').style.display = 'none';
+    }
+
+    function toggleProfilePopup() {
+        const profilePopup = document.getElementById('profilePopup');
+        const overlay = document.getElementById('profileOverlay');
+        const isVisible = profilePopup.style.display === 'flex';
+        profilePopup.style.display = isVisible ? 'none' : 'flex';
+        overlay.style.display = isVisible ? 'none' : 'block';
+    }
+
+    function closeProfilePopup() {
+        document.getElementById('profilePopup').style.display = 'none';
+        document.getElementById('profileOverlay').style.display = 'none';
+    }
+
+    function openBoringModal() {
+        document.getElementById('boringLat').value = "{{ session.get('latitude') }}";
+        document.getElementById('boringLon').value = "{{ session.get('longitude') }}";
+        new bootstrap.Modal(document.getElementById('boringModal')).show();
+    }
+
+    map.on('mousemove', function (e) {
+        const lat = e.latlng.lat.toFixed(5);
+        const lon = e.latlng.lng.toFixed(5);
+        document.getElementById('coordinateDisplay').textContent = `Lat: ${lat}, Lon: ${lon}`;
+    });
+
+    fetch('/user_nearestwell_data')
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) return;
+
+            // Brown marker = user signup location
+            L.circleMarker([data.user_location.lat, data.user_location.lon], {
+                radius: 8,
+                fillColor: 'brown',
+                color: 'black',
+                weight: 1,
+                fillOpacity: 0.9
+            }).addTo(map).bindPopup("You signed up here!");
+
+            // Pink marker = nearest well
+            L.circleMarker([data.nearest_well.lat, data.nearest_well.lon], {
+                radius: 8,
+                fillColor: 'pink',
+                color: 'black',
+                weight: 1,
+                fillOpacity: 0.9
+            }).addTo(map).bindPopup(data.nearest_well.popup);
+
+            // Auto center map on user
+            map.setView([data.user_location.lat, data.user_location.lon], 10);
+        });
+
+    // First fetch user and well data, then initialize map and markers 
+    let boringLat = null, boringLon = null;
+
+function openBoringModal() {
+    document.getElementById('boringForm').reset();
+    document.getElementById('boringOverlay').style.display = 'block';
+    document.getElementById('boringFormPopup').style.display = 'flex';
+
+    map.once('click', function(e) {
+        boringLat = e.latlng.lat.toFixed(6);
+        boringLon = e.latlng.lng.toFixed(6);
+        document.getElementById("latInput").value = boringLat;
+        document.getElementById("lonInput").value = boringLon;
+
+        // Auto-set state & district from dropdowns
+        const state = document.getElementById("stateSelect").value;
+        const district = document.getElementById("districtSelect").value;
+        document.getElementById("stateInput").value = state;
+        document.getElementById("districtInput").value = district;
+        alert("Location Selected! Now fill the form and submit.");
+    });
+}
+
+function closeBoringPopup() {
+    document.getElementById('boringOverlay').style.display = 'none';
+    document.getElementById('boringFormPopup').style.display = 'none';
+}
+
+document.getElementById("boringForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch("/submit_boring_data", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Data submitted!");
+        closeBoringPopup();
+    })
+    .catch(err => {
+        console.error("Error submitting data:", err);
+        alert("Error submitting data.");
+    });
+});
+
+map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+
+    // Fill lat/lon hidden fields
+    document.getElementById('latInput').value = lat;
+    document.getElementById('lonInput').value = lon;
+
+    // Reverse geocode to get state and district
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+        .then(response => response.json())
+        .then(data => {
+            const address = data.address;
+            const state = address.state || '';
+            const district = address.county || address.city || address.town || '';
+
+            // Fill state and district
+            document.getElementById('stateInput').value = state;
+            document.getElementById('districtInput').value = district;
+
+            // Show the boring data form popup
+            document.getElementById('boringOverlay').style.display = 'block';
+            document.getElementById('boringFormPopup').style.display = 'block';
+        })
+        .catch(err => {
+            alert("Failed to detect location info. Try again.");
+            console.error(err);
+        });
+});
+
+
+</script>
+<script>
+    let mapClickEnabled = false;
+    
+    function enableMapClickForBoringData() {
+        alert("Click on the map to select the location for boring data.");
+        mapClickEnabled = true;
+    }
+    
+    map.on('click', function(e) {
+        if (!mapClickEnabled) return;
+    
+        mapClickEnabled = false; // Reset to prevent further clicks
+    
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+    
+        // Fill lat/lon hidden fields
+        document.getElementById('latInput').value = lat;
+        document.getElementById('lonInput').value = lon;
+    
+        // Reverse geocode to get state and district
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+            .then(response => response.json())
+            .then(data => {
+                const address = data.address;
+                const state = address.state || '';
+                const district = address.county || address.city || address.town || '';
+    
+                document.getElementById('stateInput').value = state;
+                document.getElementById('districtInput').value = district;
+    
+                // Open the form popup
+                document.getElementById('boringOverlay').style.display = 'block';
+                document.getElementById('boringFormPopup').style.display = 'block';
+            })
+            .catch(err => {
+                alert("Failed to detect location info. Try again.");
+                console.error(err);
+            });
+    });
+    
+    function closeBoringPopup() {
+        document.getElementById('boringOverlay').style.display = 'none';
+        document.getElementById('boringFormPopup').style.display = 'none';
+    }
+    </script>
+    
+<!-- <script>
+    const userLat = {{ user_lat if user_lat else 'null' }};
+    const userLon = {{ user_lon if user_lon else 'null' }};
+</script> -->
+
+
+
+
+
+
+
+
+
+</body>
+</html>

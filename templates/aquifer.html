@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+    <head>
+        <meta charset="UTF-8">
+        <title>जल-तल | Aquifer Map</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+        <!-- Bootstrap 5 -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+        <!-- Bootstrap Icons -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+    
+            .navbar {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                z-index: 999;
+            }
+    
+            #map-container {
+                position: absolute;
+                top: 56px; /* Height of fixed navbar */
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+    
+            .navbar-brand {
+                font-weight: bold;
+                font-size: 1.5rem;
+            }
+    
+            .nav-link {
+                color: white !important;
+                margin-right: 10px;
+            }
+    
+            .nav-link:hover {
+                color: #ffeb3b !important;
+            }
+    
+            .folium-map {
+                width: 100%;
+                height: 100%;
+            }
+
+            /* Legend Style */
+            .legend {
+                position: absolute;
+                margin-top: 45px;
+                top: 66px; /* Just below the 56px navbar */
+                right: 10px; /* RIGHT side now */
+                background: rgba(255, 255, 255, 0.9);
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-size: 13px;
+                z-index: 1100;
+                box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            }
+
+            
+            .legend h4 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .legend div {
+                margin-bottom: 4px;
+            }
+            
+            .legend span {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                margin-right: 8px;
+                border-radius: 50%;
+            }
+            
+            
+        </style>
+    </head>
+
+    
+<body>
+
+<!-- Fixed Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">जल-तल</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav me-3">
+                <li class="nav-item"><a class="nav-link" href="/aquifer">Aquifer Map</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/nearestwell">Nearest Well</a></li>
+                <li class="nav-item"><a class="nav-link" href="/farmerhelp">Farmer Help</a></li>
+            </ul>
+            <!-- <div class="nav-item ms-3">
+                <span class="login-icon" onclick="toggleLoginDropdown()">
+                    <i class="bi bi-person-circle" style="font-size: 1.5rem; color: white;"></i>
+                </span>
+                <div class="login-dropdown" id="loginDropdown">
+                    <a href="/login">Login</a>
+                    <a href="/signup">Sign Up</a>
+                </div>
+            </div> -->
+        </div>
+    </div>
+</nav>
+<!-- Custom Legend -->
+<div class="legend">
+    <h6><strong>Legend</strong></h6>
+    <div><span style="background:#FF0000;"></span> no yield</div>
+    <div><span style="background:#00FF00;"></span> 30m to 80m , 100-200 lpm yield</div>
+    <div><span style="background:#ee9450;"></span> >80m , 30-50 lpm</div>
+    <div><span style="background:#808080;"></span> >80m limited(hills and pleatues)</div>
+    <div><span style="background:#fffb85;"></span> 30m to 80m 50 - 100 lpm yield</div>
+    <div><span style="background:#f477e1;"></span> >80m , 50-100 lpm</div>
+
+</div>
+
+<!-- Map Container -->
+<div id="map-container">
+    {{ map_html|safe }}
+</div>
+
+<!-- Custom Legend -->
+
+<div id="coordinateDisplay" style="position: absolute; bottom: 10px; right: 15px; background: rgba(0, 0, 0, 0.9); color: #fffcfc; padding: 6px 12px; font-size: 17px; border-radius: 4px; box-shadow: 0 0 5px rgba(255, 254, 254, 0.3); z-index: 1000;">
+    Lat: , Lon: 
+</div>
+
+
+
+
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+
+<script>
+  // Toggle the login dropdown visibility
+function toggleLoginDropdown() {
+    const loginDropdown = document.getElementById('loginDropdown');
+    loginDropdown.style.display = loginDropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(function () {
+            const map = Object.values(window).find(v => v instanceof L.Map);
+            if (!map) {
+                console.error("Leaflet map not found");
+                return;
+            }
+
+            map.on('mousemove', function (e) {
+                const lat = e.latlng.lat.toFixed(5);
+                const lon = e.latlng.lng.toFixed(5);
+                document.getElementById('coordinateDisplay').textContent = `Lat: ${lat}, Lon: ${lon}`;
+            });
+        }, 500);
+    });
+
+
+</script>
+
+<!-- <script>
+    function zoomToAquifer(lat, lon, district, state) {
+        // Use leaflet to zoom in and fly to location
+        const map = window._mapInstance;  // We'll define this globally in a sec
+        if (map) {
+            map.setView([lat, lon], 10); // Adjust zoom level
+        }
+    
+      
+    }
+
+
+    </script> -->
+
+    <!-- <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(function () {
+                const map = window._mapInstance;
+        
+                if (map) {
+                    map.on('mousemove', function (e) {
+                        const lat = e.latlng.lat.toFixed(5);
+                        const lon = e.latlng.lng.toFixed(5);
+                        document.getElementById('coordinateDisplay').textContent = `Lat: ${lat}, Lon: ${lon}`;
+                    });
+                } else {
+                    console.error("Leaflet map not found in window._mapInstance");
+                }
+            }, 1000);  // slight delay to ensure map loads
+        });
+        </script> -->
+        
+
+
+</body>
+</html>

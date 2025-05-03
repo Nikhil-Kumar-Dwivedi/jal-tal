@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Help</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: url("img.png") no-repeat center center fixed;
+    background-size: cover;
+    filter: blur(8px);
+    z-index: -1;
+}
+
+body {
+    background-color: rgba(255, 255, 255, 0.6); /* white overlay with some transparency */
+    backdrop-filter: blur(3px);
+}
+
+        
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">जल-तल</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                    aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+    
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav me-3">
+                    <li class="nav-item"><a class="nav-link" href="/aquifer">Aquifer Map</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/nearestwell">Nearest Well</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/farmerhelp">Farmer Help</a></li>
+                    <li class="nav-item"><a class="nav-link" href="https://farmpedia.org/index.php?title=Section_5#Tied_ridging_to_capture_and_prevent_erosion">Help Section</a></li>
+                </ul>
+                <!-- <div class="nav-item ms-3">
+                    <span class="login-icon" onclick="toggleLoginDropdown()">
+                        <i class="bi bi-person-circle" style="font-size: 1.5rem; color: white;"></i>
+                    </span>
+                    <div class="login-dropdown" id="loginDropdown">
+                        <a href="/login">Login</a>
+                        <a href="/signup">Sign Up</a>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Intro Section -->
+    <div class="container">
+        <h3 class="text-center">Farmer Help Section</h3>
+
+        <h4 class="mt-4">Tied Ridging to Capture and Prevent Erosion</h4>
+        <p>
+            Tied ridging is a water conservation technique that involves creating small, divided furrows 2 to 3 meters long to form basins where water can accumulate. This method reduces water runoff and increases water retention in crop fields, making it especially effective in low rainfall areas. Studies have shown that tied ridging can significantly decrease soil erosion and improve crop yields by maintaining higher soil moisture levels.
+        </p>
+
+        <h5>Practice and Products Required</h5>
+        <p>
+            The process involves using a ridging plow equipped with a disk to form small ridges of soil at intervals, creating basins approximately 15 cm wide and 15 cm deep. These basins help in capturing rainwater, allowing it to infiltrate slowly into the soil. It's recommended to construct these ridges before the onset of rainfall to prevent breakage. Tied ridging is most suitable for lands with less than a 7% slope gradient.
+        </p>
+
+        <h5>Possible Benefits</h5>
+        <p>
+            Implementing tied ridging has been associated with several benefits:
+        </p>
+        <ul>
+            <li>Reduction in seasonal runoff, leading to better water conservation.</li>
+            <li>Improved soil moisture content, enhancing crop resilience during droughts.</li>
+            <li>Increased crop yields due to better water and nutrient retention.</li>
+            <li>Prevention of soil erosion, maintaining soil fertility over time.</li>
+        </ul>
+
+        <h5>Environment Best Suited to Tied Ridging</h5>
+        <p>
+            Tied ridging is most effective in coarse soils and regions receiving up to 1000 mm of annual rainfall. It's less suitable for dense clay soils, where it may cause water-logging. In areas with higher rainfall, adjusting the size of the basins can help mitigate potential water-logging issues.
+        </p>
+
+        <h5>Limits to Adoption and Proposed Solutions</h5>
+        <p>
+            Despite its benefits, adoption of tied ridging faces challenges such as the cost of equipment, labor requirements, and potential for increased insect activity due to standing water. Solutions include:
+        </p>
+        <ul>
+            <li>Community-based implementation to share labor and equipment costs.</li>
+            <li>Renting equipment to reduce individual investment burdens.</li>
+            <li>Extending the length of ridges to reduce the number of basins needed.</li>
+            <li>Applying insecticides as a preventive measure against pests.</li>
+        </ul>
+    </div>
+
+</body>
+</html>

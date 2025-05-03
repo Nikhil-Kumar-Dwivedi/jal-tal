@@ -1,0 +1,3 @@
+{
+  "error": "Database connection failed: SQLSTATE[42P01]: Undefined table: 7 ERROR:  relation \"gwp_warangal\" does not exist\nLINE 14: FROM gwp_warangal;\n              ^"
+}

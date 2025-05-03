@@ -117,8 +117,14 @@ The goal of जल-तल is to provide an interactive and intelligent interface
 - ![Screenshot 2025-05-03 225848](https://github.com/user-attachments/assets/dd5236c2-c41e-4e19-88e1-1d750987e9f1)
 
 - 🔷 Nearest Well Prediction and Pink Marker Highlight
-- 🔷 Submit Boring Data Form with Map Location Picker
-- 🔷 Farmer Help Section with Background Image
+- ![Screenshot 2025-05-03 230347](https://github.com/user-attachments/assets/1048cd7c-e7b1-4975-9a94-cd5c02b2ec50)
+
+- 🔷 Login and Signup Pages For User Sessions
+- ![Screenshot 2025-05-03 231050](https://github.com/user-attachments/assets/2d244293-9af5-416e-94a6-c66073de9ba5)
+
+- Using The Xamm for the Database to record the Users Detail's
+- ![Screenshot 2025-05-03 231107](https://github.com/user-attachments/assets/052f20c6-13f7-48ef-b27f-161922ef4910)
+
 
 ---
 
